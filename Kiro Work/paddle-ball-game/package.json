@@ -1,0 +1,13 @@
+{
+  "name": "paddle-ball-game",
+  "version": "1.0.0",
+  "description": "A simple spec-driven paddle-ball game (single HTML file + testable core logic).",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "start": "echo \"Open index.html in a browser to play.\""
+  },
+  "devDependencies": {
+    "fast-check": "^3.23.1"
+  }
+}
