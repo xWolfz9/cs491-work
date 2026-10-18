@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Productivity Dashboard</title>
+  <style>
+    :root {
+      --bg: #1E1E24;
+      --bg-raised: #26262E;
+      --border: #3a3a44;
+      --accent: #9B6DFF;
+      --text: #E7E3F4;
+      --muted: #8f8aa3;
+    }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: #141418;
+      color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+      box-sizing: border-box;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+    header .sub {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      width: 100%;
+      max-width: 960px;
+    }
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+    }
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+    .quote-text {
+      font-size: 18px;
+      line-height: 1.4;
+      margin: 0 0 8px;
+    }
+    .quote-author {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .weather-temp {
+      font-size: 34px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .weather-desc {
+      font-size: 16px;
+      margin: 6px 0;
+    }
+    .weather-meta, .weather-loc {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .task-input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .task-input-row input {
+      flex: 1;
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+    .task-input-row button {
+      background: var(--accent);
+      border: none;
+      border-radius: 6px;
+      color: #10101a;
+      font-weight: 600;
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+    ul.tasks {
+      list-style: none;
+      margin: 0 0 14px;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    ul.tasks li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+    ul.tasks li .title {
+      flex: 1;
+      font-size: 14px;
+    }
+    ul.tasks li.done .title {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+    ul.tasks li .delete {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+    }
+    ul.tasks li .delete:hover { color: #FF5370; }
+    .empty {
+      color: var(--muted);
+      font-size: 13px;
+      font-style: italic;
+    }
+    .progress-wrap {
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      height: 14px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      transition: width 0.25s ease, background-color 0.25s ease;
+    }
+    .progress-label {
+      text-align: right;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Productivity Dashboard</h1>
+    <div class="sub">Daily motivation · Weather · Tasks</div>
+  </header>
+
+  <main class="grid">
+    <!-- (a) Daily Motivation -->
+    <section class="card">
+      <h2>Daily Motivation</h2>
+      <p class="quote-text" id="quote-text">&nbsp;</p>
+      <div class="quote-author" id="quote-author"></div>
+    </section>
+
+    <!-- (b) Weather -->
+    <section class="card">
+      <h2>Weather</h2>
+      <p class="weather-temp" id="weather-temp">…</p>
+      <div class="weather-desc" id="weather-desc">Loading…</div>
+      <div class="weather-meta" id="weather-meta"></div>
+      <div class="weather-loc" id="weather-loc"></div>
+    </section>
+
+    <!-- (c) Task Tracker -->
+    <section class="card">
+      <h2>Task Tracker</h2>
+      <div class="task-input-row">
+        <input id="task-input" type="text" placeholder="Add a task…" aria-label="New task" />
+        <button id="task-add" type="button">Add</button>
+      </div>
+      <ul class="tasks" id="task-list"></ul>
+      <div class="progress-wrap">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+      <div class="progress-label" id="progress-label">0% complete</div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { pickDailyQuote } from './quotes.js';
+    import {
+      WEATHER_CONFIG,
+      buildForecastUrl,
+      parseCurrentWeather,
+      FALLBACK_WEATHER,
+    } from './weather.js';
+    import {
+      addTask,
+      toggleTask,
+      removeTask,
+      completionPercent,
+      progressColor,
+    } from './tasks.js';
+
+    // ----- (a) Daily Motivation -----
+    const quote = pickDailyQuote();
+    if (quote) {
+      document.getElementById('quote-text').textContent = `“${quote.text}”`;
+      document.getElementById('quote-author').textContent = `— ${quote.author}`;
+    }
+
+    // ----- (b) Weather (live fetch with graceful fallback) -----
+    function renderWeather(data) {
+      const temp = data.temperatureC;
+      document.getElementById('weather-temp').textContent =
+        temp === null || temp === undefined ? '—' : `${Math.round(temp)}°C`;
+      document.getElementById('weather-desc').textContent = data.description ?? '';
+      document.getElementById('weather-meta').textContent =
+        data.windspeed === null || data.windspeed === undefined
+          ? ''
+          : `Wind ${data.windspeed} km/h`;
+      document.getElementById('weather-loc').textContent = WEATHER_CONFIG.label;
+    }
+
+    async function loadWeather() {
+      // Abort a stalled request after a few seconds so a hung connection
+      // (captive portal, dropped packets) still falls back instead of
+      // leaving the panel stuck on "Loading…".
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      try {
+        const url = buildForecastUrl(WEATHER_CONFIG.latitude, WEATHER_CONFIG.longitude);
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        const parsed = parseCurrentWeather(json);
+        renderWeather(parsed ?? FALLBACK_WEATHER);
+      } catch (err) {
+        // Offline / network failure / timeout (abort): show the bundled
+        // fallback so the panel always renders something sensible.
+        renderWeather(FALLBACK_WEATHER);
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+    loadWeather();
+
+    // ----- (c) Task Tracker (with localStorage persistence) -----
+    const STORAGE_KEY = 'productivity-dashboard.tasks';
+
+    function hasStorage() {
+      try {
+        return typeof localStorage !== 'undefined';
+      } catch {
+        return false;
+      }
+    }
+
+    function loadTasks() {
+      if (!hasStorage()) return [];
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveTasks(list) {
+      if (!hasStorage()) return;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      } catch {
+        /* ignore quota / disabled storage */
+      }
+    }
+
+    let tasks = loadTasks();
+
+    const listEl = document.getElementById('task-list');
+    const inputEl = document.getElementById('task-input');
+    const addBtn = document.getElementById('task-add');
+    const barEl = document.getElementById('progress-bar');
+    const labelEl = document.getElementById('progress-label');
+
+    function update(newTasks) {
+      tasks = newTasks;
+      saveTasks(tasks);
+      render();
+    }
+
+    function render() {
+      listEl.innerHTML = '';
+      if (tasks.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'empty';
+        li.textContent = 'No tasks yet. Add one above.';
+        listEl.appendChild(li);
+      } else {
+        for (const task of tasks) {
+          const li = document.createElement('li');
+          if (task.done) li.classList.add('done');
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.checked = !!task.done;
+          checkbox.addEventListener('change', () => update(toggleTask(tasks, task.id)));
+
+          const title = document.createElement('span');
+          title.className = 'title';
+          title.textContent = task.title;
+
+          const del = document.createElement('button');
+          del.className = 'delete';
+          del.type = 'button';
+          del.textContent = '✕';
+          del.setAttribute('aria-label', 'Delete task');
+          del.addEventListener('click', () => update(removeTask(tasks, task.id)));
+
+          li.append(checkbox, title, del);
+          listEl.appendChild(li);
+        }
+      }
+
+      const percent = completionPercent(tasks);
+      barEl.style.width = `${percent}%`;
+      barEl.style.backgroundColor = progressColor(percent);
+      labelEl.textContent = `${percent}% complete`;
+    }
+
+    function handleAdd() {
+      const value = inputEl.value.trim();
+      if (!value) return;
+      update(addTask(tasks, value));
+      inputEl.value = '';
+      inputEl.focus();
+    }
+
+    addBtn.addEventListener('click', handleAdd);
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleAdd();
+    });
+
+    render();
+  </script>
+</body>
+</html>

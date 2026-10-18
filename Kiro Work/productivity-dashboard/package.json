@@ -1,0 +1,10 @@
+{
+  "name": "productivity-dashboard",
+  "version": "1.0.0",
+  "description": "A personal productivity dashboard (daily motivation quote, current weather, task tracker) built as testable vanilla-JS ES modules + a single index.html.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "start": "echo \"Open index.html in a browser (or run: npx serve .)\""
+  }
+}
